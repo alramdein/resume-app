@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS occupations (
     position TEXT,
     start_date TIMESTAMP WITH TIME ZONE,
     end_date TIMESTAMP WITH TIME ZONE
+    status TEXT,
+    achievements TEXT[],
 );
 
 CREATE TABLE IF NOT EXISTS educations (

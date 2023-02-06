@@ -1,6 +1,15 @@
 package model
 
-import "time"
+import (
+	"context"
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type EducationRepository interface {
+	CreateWithTransaction(ctx context.Context, tx *gorm.DB, education Education) error
+}
 
 type Education struct {
 	Name      string     `json:"name"`
