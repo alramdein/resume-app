@@ -14,7 +14,7 @@ func NewOccupationRepository(db *gorm.DB) model.OccupationRepository {
 }
 
 func (o *occupationRepository) CreateWithTransaction(ctx context.Context, tx *gorm.DB, occupation model.Occupation) error {
-	err := tx.Create(occupation).Error
+	err := tx.Create(&occupation).Error
 	if err != nil {
 		return err
 	}

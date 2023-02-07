@@ -2,9 +2,15 @@ package usecase
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"reflect"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/alramdein/karirlab-test/model"
-	"github.com/sirupsen/logrus"
+	"github.com/alramdein/karirlab-test/utils"
+	"github.com/guregu/null"
 )
 
 type resumeUsecase struct {
@@ -18,7 +24,7 @@ func NewResumeUsecase(resumeRepo model.ResumeRepository,
 	occupationRepo model.OccupationRepository,
 	educationRepo model.EducationRepository,
 	gormTransactionRepo model.GormTransactionerRepository) model.ResumeUsecase {
-	return resumeUsecase{
+	return &resumeUsecase{
 		resumeRepo:          resumeRepo,
 		occupationRepo:      occupationRepo,
 		educationRepo:       educationRepo,
@@ -28,32 +34,14 @@ func NewResumeUsecase(resumeRepo model.ResumeRepository,
 
 func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInput) error {
 	resume := model.Resume{
-		Name:          input.Name,
-		Email:         input.Email,
-		PhoneNumber:   input.PhoneNumber,
-		LinkedinURL:   *input.LinkedinURL,
-		PortofolioURL: *input.PortofolioURL,
-		Achievements:  *input.Achievements,
+		ID:           utils.GenerateUID(),
+		Name:         input.Name,
+		Email:        input.Email,
+		PhoneNumber:  input.PhoneNumber,
+		LinkedinURL:  *input.LinkedinURL,
+		PortfolioURL: *input.PortfolioURL,
 	}
-
-	occupation := model.Occupation{
-		Name:         *input.OccupationName,
-		Position:     *input.OccupationPosition,
-		StartDate:    *input.OccupationStartDate,
-		EndDate:      input.OccupationEndDate,
-		Status:       input.OccupationStatus,
-		Achievements: input.OccupationAchievements,
-	}
-
-	education := model.Education{
-		Name:      *input.EducationName,
-		Degree:    *input.EducationDegree,
-		Faculty:   *input.EducationFaculty,
-		City:      *input.EducationCity,
-		StartDate: *input.EducationStartDate,
-		EndDate:   input.EducationEndDate,
-		Score:     *input.EducationScore,
-	}
+	resume.Achievements.Scan(input.Achievements)
 
 	tx := r.gormTransactionRepo.BeginTransaction()
 	err := r.resumeRepo.CreateWithTransaction(ctx, tx, resume)
@@ -63,21 +51,59 @@ func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInpu
 		return err
 	}
 
-	err = r.occupationRepo.CreateWithTransaction(ctx, tx, occupation)
-	if err != nil {
-		logrus.Error(err.Error())
-		r.gormTransactionRepo.Rollback(tx)
-		return err
+	if input.Occupations != nil {
+		for _, o := range *input.Occupations {
+			fmt.Println(reflect.TypeOf(o))
+			occ := convertToModel(o)
+			fmt.Println(occ)
+			err = r.occupationRepo.CreateWithTransaction(ctx, tx, model.Occupation{
+				ID:           utils.GenerateUID(),
+				ResumeID:     resume.ID,
+				Name:         null.StringFrom(*occ.Name),
+				Position:     null.StringFrom(*occ.Position),
+				StartDate:    null.TimeFrom(*occ.StartDate),
+				EndDate:      null.TimeFrom(*occ.StartDate),
+				Status:       null.StringFrom(*occ.Status),
+				Achievements: *occ.Achievements,
+			})
+			if err != nil {
+				logrus.Error(err.Error())
+				r.gormTransactionRepo.Rollback(tx)
+				return err
+			}
+		}
 	}
 
-	err = r.educationRepo.CreateWithTransaction(ctx, tx, education)
-	if err != nil {
-		logrus.Error(err.Error())
-		r.gormTransactionRepo.Rollback(tx)
-		return err
-	}
+	// if input.Educations != nil {
+	// 	for _, e := range *input.Educations {
+	// 		edu := e.(model.CreateEducationInput)
+	// 		err = r.educationRepo.CreateWithTransaction(ctx, tx, model.Education{
+	// 			ID:        utils.GenerateUID(),
+	// 			ResumeID:  resume.ID,
+	// 			Name:      edu.Name,
+	// 			Faculty:   edu.Faculty,
+	// 			Degree:    edu.Degree,
+	// 			City:      edu.City,
+	// 			StartDate: edu.StartDate,
+	// 			EndDate:   edu.EndDate,
+	// 			Score:     edu.Score,
+	// 		})
+	// 		if err != nil {
+	// 			logrus.Error(err.Error())
+	// 			r.gormTransactionRepo.Rollback(tx)
+	// 			return err
+	// 		}
+	// 	}
+	// }
 
 	r.gormTransactionRepo.Commit(tx)
 
 	return nil
+}
+
+func convertToModel(o interface{}) model.CreateOccupationInput {
+	jsonData, _ := json.Marshal(o.(map[string]interface{}))
+	var a model.CreateOccupationInput
+	json.Unmarshal(jsonData, &a)
+	return a
 }

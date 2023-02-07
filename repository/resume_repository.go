@@ -14,7 +14,7 @@ func NewResumeRepository(db *gorm.DB) model.ResumeRepository {
 }
 
 func (r *resumeRepository) CreateWithTransaction(ctx context.Context, tx *gorm.DB, resume model.Resume) error {
-	err := tx.Create(resume).Error
+	err := tx.Create(&resume).Error
 	if err != nil {
 		return err
 	}

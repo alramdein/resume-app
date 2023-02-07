@@ -2,12 +2,13 @@ package model
 
 import (
 	"context"
-	"time"
 
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
 type ResumeUsecase interface {
+	Create(ctx context.Context, input CreateResumeInput) error
 }
 
 type ResumeRepository interface {
@@ -15,36 +16,24 @@ type ResumeRepository interface {
 }
 
 type Resume struct {
-	Name          string     `json:"name"`
-	Email         string     `json:"email"`
-	PhoneNumber   int64      `json:"phone_number"`
-	LinkedinURL   string     `json:"linkedin_url"`
-	PortofolioURL string     `json:"portofolio_url"`
-	Ocupations    Occupation `json:"ocupations"`
-	Educations    Education  `json:"educations"`
-	Achievements  []string   `json:"achievements"`
+	ID           int64          `json:"id"`
+	Name         string         `json:"name"`
+	Email        string         `json:"email"`
+	PhoneNumber  string         `json:"phone_number"`
+	LinkedinURL  string         `json:"linkedin_url"`
+	PortfolioURL string         `json:"portfolio_url"`
+	Achievements pq.StringArray `json:"achievements" gorm:"type:text[]"`
+	Occupations  Occupation     `json:"occupations" gorm:"-"`
+	Educations   Education      `json:"educations" gorm:"-"`
 }
 
 type CreateResumeInput struct {
-	Name                   string      `json:"name"`
-	Email                  string      `json:"email"`
-	PhoneNumber            int64       `json:"phone_number"`
-	LinkedinURL            *string     `json:"linkedin_url"`
-	PortofolioURL          *string     `json:"portofolio_url"`
-	Ocupations             *Occupation `json:"ocupations"`
-	Educations             *Education  `json:"educations"`
-	Achievements           *[]string   `json:"achievements"`
-	OccupationName         *string     `json:"occupation_name"`
-	OccupationPosition     *string     `json:"occupation_position"`
-	OccupationStartDate    *time.Time  `json:"occupation_start_date"`
-	OccupationEndDate      *time.Time  `json:"occupation_end_date"`
-	OccupationStatus       string      `json:"occupation_status"`
-	OccupationAchievements []string    `json:"occupation_achievements"`
-	EducationName          *string     `json:"education_name"`
-	EducationDegree        *string     `json:"education_degree"`
-	EducationFaculty       *string     `json:"education_faculty"`
-	EducationCity          *string     `json:"education_city"`
-	EducationStartDate     *time.Time  `json:"education_start_sate"`
-	EducationEndDate       *time.Time  `json:"education_end_date"`
-	EducationScore         *float64    `json:"education_score"`
+	Name         string         `json:"name"`
+	Email        string         `json:"email"`
+	PhoneNumber  string         `json:"phone_number"`
+	LinkedinURL  *string        `json:"linkedin_url"`
+	PortfolioURL *string        `json:"portfolio_url"`
+	Achievements *[]string      `json:"achievements"`
+	Occupations  *[]interface{} `json:"occupations"`
+	Educations   *[]interface{} `json:"educations"`
 }

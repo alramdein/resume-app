@@ -5,6 +5,7 @@ import (
 
 	"github.com/alramdein/karirlab-test/model"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 )
 
 type resumeHandler struct {
@@ -16,11 +17,27 @@ func NewResumeHandler(e *echo.Echo, ru model.ResumeUsecase) {
 		resumeUsecase: ru,
 	}
 
-	e.POST("/resume", handler.Create)
+	e.POST("/resumes", handler.Create)
 }
 
 func (r *resumeHandler) Create(c echo.Context) error {
-	// TODO: fetch data from body param and put it on create input model and send it to usecase
+	request := new(model.CreateResumeInput)
+	err := c.Bind(request)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: "invalid json input",
+		})
+	}
+
+	err = r.resumeUsecase.Create(c.Request().Context(), *request)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, &Response{
+			Message: "something went wrong",
+		})
+	}
+
 	return c.JSON(http.StatusOK, &Response{
 		Message: "successfully add a resume",
 	})

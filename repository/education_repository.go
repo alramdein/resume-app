@@ -14,7 +14,7 @@ func NewEducationRepository(db *gorm.DB) model.EducationRepository {
 }
 
 func (e *educationRepository) CreateWithTransaction(ctx context.Context, tx *gorm.DB, education model.Education) error {
-	err := tx.Create(education).Error
+	err := tx.Create(&education).Error
 	if err != nil {
 		return err
 	}

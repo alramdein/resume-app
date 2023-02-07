@@ -12,11 +12,23 @@ type EducationRepository interface {
 }
 
 type Education struct {
-	Name      string     `json:"name"`
-	Degree    string     `json:"degree"`
-	Faculty   string     `json:"faculty"`
-	City      string     `json:"city"`
-	StartDate time.Time  `json:"start_date"`
-	EndDate   *time.Time `json:"end_date"`
-	Score     float64    `json:"score"`
+	ID        int64      `json:"-"`
+	ResumeID  int64      `json:"-"`
+	Name      string     `json:"education_name"`
+	Degree    string     `json:"education_degree"`
+	Faculty   string     `json:"education_faculty"`
+	City      string     `json:"education_city"`
+	StartDate time.Time  `json:"education_start"`
+	EndDate   *time.Time `json:"education_end"`
+	Score     float64    `json:"education_score"`
+}
+
+type CreateEducationInput struct {
+	Name      *string    `json:"education_name"`
+	Degree    *string    `json:"education_degree"`
+	Faculty   *string    `json:"education_faculty"`
+	City      *string    `json:"education_city"`
+	StartDate *time.Time `json:"education_start"`
+	EndDate   *time.Time `json:"education_end"`
+	Score     *float64   `json:"education_score"`
 }
