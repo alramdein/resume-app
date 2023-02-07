@@ -9,14 +9,16 @@ import (
 
 type ResumeUsecase interface {
 	Create(ctx context.Context, input CreateResumeInput) error
-	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
 	Update(ctx context.Context, resumeID int64, input CreateResumeInput) error
+	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
+	Delete(ctx context.Context, resumeID int64) error
 }
 
 type ResumeRepository interface {
 	CreateWithTransaction(ctx context.Context, tx *gorm.DB, resume Resume) error
-	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
 	UpdateWithTransaction(ctx context.Context, tx *gorm.DB, resume Resume) error
+	DeleteWithTransaction(ctx context.Context, tx *gorm.DB, resumeID int64) error
+	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
 }
 
 type Resume struct {

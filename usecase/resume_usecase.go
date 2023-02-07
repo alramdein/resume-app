@@ -121,6 +121,20 @@ func (r *resumeUsecase) Update(ctx context.Context, resumeID int64, input model.
 	return nil
 }
 
+func (r *resumeUsecase) Delete(ctx context.Context, resumeID int64) error {
+	tx := r.gormTransactionRepo.BeginTransaction()
+	err := r.resumeRepo.DeleteWithTransaction(ctx, tx, resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		r.gormTransactionRepo.Rollback(tx)
+		return err
+	}
+
+	r.gormTransactionRepo.Commit(tx)
+
+	return nil
+}
+
 func (r *resumeUsecase) FindByID(ctx context.Context, resumeID int64) (*model.Resume, error) {
 	resume, err := r.resumeRepo.FindByID(ctx, resumeID)
 	if err != nil {

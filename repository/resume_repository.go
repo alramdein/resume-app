@@ -25,6 +25,22 @@ func (r *resumeRepository) CreateWithTransaction(ctx context.Context, tx *gorm.D
 	return nil
 }
 
+func (r *resumeRepository) UpdateWithTransaction(ctx context.Context, tx *gorm.DB, resume model.Resume) error {
+	err := tx.WithContext(ctx).Updates(&resume).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *resumeRepository) DeleteWithTransaction(ctx context.Context, tx *gorm.DB, resumeID int64) error {
+	err := tx.WithContext(ctx).Delete(&model.Resume{}, resumeID).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *resumeRepository) FindByID(ctx context.Context, resumeID int64) (*model.Resume, error) {
 	var resume model.Resume
 	err := r.db.WithContext(ctx).Where("id = ?", resumeID).Take(&resume).Error
@@ -37,12 +53,4 @@ func (r *resumeRepository) FindByID(ctx context.Context, resumeID int64) (*model
 	}
 
 	return &resume, nil
-}
-
-func (r *resumeRepository) UpdateWithTransaction(ctx context.Context, tx *gorm.DB, resume model.Resume) error {
-	err := tx.WithContext(ctx).Updates(&resume).Error
-	if err != nil {
-		return err
-	}
-	return nil
 }

@@ -19,8 +19,9 @@ func NewResumeHandler(e *echo.Echo, ru model.ResumeUsecase) {
 	}
 
 	e.POST("/resumes", handler.Create)
-	e.GET("/resumes/:id", handler.FindByID)
 	e.PUT("/resumes/:id", handler.Update)
+	e.DELETE("/resumes/:id", handler.Delete)
+	e.GET("/resumes/:id", handler.FindByID)
 }
 
 func (r *resumeHandler) Create(c echo.Context) error {
@@ -88,6 +89,42 @@ func (r *resumeHandler) Update(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &Response{
 		Message: "successfully update a resume",
+	})
+}
+
+func (r *resumeHandler) Delete(c echo.Context) error {
+	id := c.Param("id")
+	resumeID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: "invalid resumeID",
+		})
+	}
+
+	resume, err := r.resumeUsecase.FindByID(c.Request().Context(), resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, &Response{
+			Message: "something went wrong",
+		})
+	}
+	if resume == nil {
+		return c.JSON(http.StatusNotFound, &Response{
+			Message: "resume not found",
+		})
+	}
+
+	err = r.resumeUsecase.Delete(c.Request().Context(), resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, &Response{
+			Message: "something went wrong",
+		})
+	}
+
+	return c.JSON(http.StatusOK, &Response{
+		Message: "successfully deleted a resume",
 	})
 }
 
