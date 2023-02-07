@@ -69,6 +69,58 @@ func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInpu
 	return nil
 }
 
+func (r *resumeUsecase) Update(ctx context.Context, resumeID int64, input model.CreateResumeInput) error {
+	resume := model.Resume{
+		ID:           resumeID,
+		Name:         input.Name,
+		Email:        input.Email,
+		PhoneNumber:  input.PhoneNumber,
+		LinkedinURL:  *input.LinkedinURL,
+		PortfolioURL: *input.PortfolioURL,
+	}
+	resume.Achievements.Scan(input.Achievements)
+
+	tx := r.gormTransactionRepo.BeginTransaction()
+	err := r.resumeRepo.UpdateWithTransaction(ctx, tx, resume)
+	if err != nil {
+		logrus.Error(err.Error())
+		r.gormTransactionRepo.Rollback(tx)
+		return err
+	}
+
+	err = r.occupationRepo.DeleteByResumeIDWithTransaction(ctx, tx, resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		r.gormTransactionRepo.Rollback(tx)
+		return err
+	}
+
+	err = r.insertOccupations(ctx, tx, resume.ID, input.Occupations)
+	if err != nil {
+		logrus.Error(err.Error())
+		r.gormTransactionRepo.Rollback(tx)
+		return err
+	}
+
+	err = r.educationRepo.DeleteByResumeIDWithTransaction(ctx, tx, resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		r.gormTransactionRepo.Rollback(tx)
+		return err
+	}
+
+	err = r.insertEducations(ctx, tx, resume.ID, input.Educations)
+	if err != nil {
+		logrus.Error(err.Error())
+		r.gormTransactionRepo.Rollback(tx)
+		return err
+	}
+
+	r.gormTransactionRepo.Commit(tx)
+
+	return nil
+}
+
 func (r *resumeUsecase) FindByID(ctx context.Context, resumeID int64) (*model.Resume, error) {
 	resume, err := r.resumeRepo.FindByID(ctx, resumeID)
 	if err != nil {

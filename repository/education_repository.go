@@ -38,3 +38,11 @@ func (e *educationRepository) FindAllByResumeID(ctx context.Context, resumeID in
 
 	return &educations, nil
 }
+
+func (e *educationRepository) DeleteByResumeIDWithTransaction(ctx context.Context, tx *gorm.DB, resumeID int64) error {
+	err := tx.WithContext(ctx).Where("resume_id = ?", resumeID).Delete(&model.Education{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

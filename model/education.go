@@ -11,6 +11,7 @@ import (
 type EducationRepository interface {
 	CreateWithTransaction(ctx context.Context, tx *gorm.DB, education Education) error
 	FindAllByResumeID(ctx context.Context, resumeID int64) (*[]Education, error)
+	DeleteByResumeIDWithTransaction(ctx context.Context, tx *gorm.DB, resumeID int64) error
 }
 
 type Education struct {

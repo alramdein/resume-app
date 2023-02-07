@@ -38,3 +38,12 @@ func (o *occupationRepository) FindAllByResumeID(ctx context.Context, resumeID i
 
 	return &occupations, nil
 }
+
+// TODO: Delete all edu and occu when updating the resume and insert new rows
+func (o *occupationRepository) DeleteByResumeIDWithTransaction(ctx context.Context, tx *gorm.DB, resumeID int64) error {
+	err := tx.WithContext(ctx).Where("resume_id = ?", resumeID).Delete(&model.Occupation{}).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}

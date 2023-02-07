@@ -10,11 +10,13 @@ import (
 type ResumeUsecase interface {
 	Create(ctx context.Context, input CreateResumeInput) error
 	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
+	Update(ctx context.Context, resumeID int64, input CreateResumeInput) error
 }
 
 type ResumeRepository interface {
 	CreateWithTransaction(ctx context.Context, tx *gorm.DB, resume Resume) error
 	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
+	UpdateWithTransaction(ctx context.Context, tx *gorm.DB, resume Resume) error
 }
 
 type Resume struct {

@@ -38,3 +38,11 @@ func (r *resumeRepository) FindByID(ctx context.Context, resumeID int64) (*model
 
 	return &resume, nil
 }
+
+func (r *resumeRepository) UpdateWithTransaction(ctx context.Context, tx *gorm.DB, resume model.Resume) error {
+	err := tx.WithContext(ctx).Updates(&resume).Error
+	if err != nil {
+		return err
+	}
+	return nil
+}
