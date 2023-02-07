@@ -69,6 +69,34 @@ func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInpu
 	return nil
 }
 
+func (r *resumeUsecase) FindByID(ctx context.Context, resumeID int64) (*model.Resume, error) {
+	resume, err := r.resumeRepo.FindByID(ctx, resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+	if resume == nil {
+		return nil, nil
+	}
+
+	occupations, err := r.occupationRepo.FindAllByResumeID(ctx, resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+
+	educations, err := r.educationRepo.FindAllByResumeID(ctx, resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+
+	resume.Occupations = *occupations
+	resume.Educations = *educations
+
+	return resume, nil
+}
+
 func (r *resumeUsecase) insertOccupations(ctx context.Context, tx *gorm.DB, resumeID int64, occupations *[]interface{}) error {
 	if occupations == nil {
 		return nil

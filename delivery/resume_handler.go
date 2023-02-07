@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/alramdein/karirlab-test/model"
 	"github.com/labstack/echo/v4"
@@ -18,6 +19,7 @@ func NewResumeHandler(e *echo.Echo, ru model.ResumeUsecase) {
 	}
 
 	e.POST("/resumes", handler.Create)
+	e.GET("/resumes/:id", handler.FindByID)
 }
 
 func (r *resumeHandler) Create(c echo.Context) error {
@@ -41,5 +43,32 @@ func (r *resumeHandler) Create(c echo.Context) error {
 	return c.JSON(http.StatusOK, &Response{
 		Message: "successfully add a resume",
 	})
+}
 
+func (r *resumeHandler) FindByID(c echo.Context) error {
+	id := c.Param("id")
+	resumeID, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: "invalid resumeID",
+		})
+	}
+
+	resume, err := r.resumeUsecase.FindByID(c.Request().Context(), resumeID)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, &Response{
+			Message: "something went wrong",
+		})
+	}
+	if resume == nil {
+		return c.JSON(http.StatusNotFound, &Response{
+			Message: "resume not found",
+		})
+	}
+
+	return c.JSON(http.StatusOK, &Response{
+		Data: resume,
+	})
 }

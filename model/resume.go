@@ -9,10 +9,12 @@ import (
 
 type ResumeUsecase interface {
 	Create(ctx context.Context, input CreateResumeInput) error
+	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
 }
 
 type ResumeRepository interface {
 	CreateWithTransaction(ctx context.Context, tx *gorm.DB, resume Resume) error
+	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
 }
 
 type Resume struct {
@@ -23,8 +25,8 @@ type Resume struct {
 	LinkedinURL  string         `json:"linkedin_url"`
 	PortfolioURL string         `json:"portfolio_url"`
 	Achievements pq.StringArray `json:"achievements" gorm:"type:text[]"`
-	Occupations  Occupation     `json:"occupations" gorm:"-"`
-	Educations   Education      `json:"educations" gorm:"-"`
+	Occupations  []Occupation   `json:"occupations" gorm:"-"`
+	Educations   []Education    `json:"educations" gorm:"-"`
 }
 
 type CreateResumeInput struct {

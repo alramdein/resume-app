@@ -11,6 +11,7 @@ import (
 
 type OccupationRepository interface {
 	CreateWithTransaction(ctx context.Context, tx *gorm.DB, occupation Occupation) error
+	FindAllByResumeID(ctx context.Context, resumeID int64) (*[]Occupation, error)
 }
 
 type Occupation struct {

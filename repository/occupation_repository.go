@@ -7,10 +7,14 @@ import (
 	"gorm.io/gorm"
 )
 
-type occupationRepository struct{}
+type occupationRepository struct {
+	db *gorm.DB
+}
 
 func NewOccupationRepository(db *gorm.DB) model.OccupationRepository {
-	return &occupationRepository{}
+	return &occupationRepository{
+		db: db,
+	}
 }
 
 func (o *occupationRepository) CreateWithTransaction(ctx context.Context, tx *gorm.DB, occupation model.Occupation) error {
@@ -19,4 +23,18 @@ func (o *occupationRepository) CreateWithTransaction(ctx context.Context, tx *go
 		return err
 	}
 	return nil
+}
+
+func (o *occupationRepository) FindAllByResumeID(ctx context.Context, resumeID int64) (*[]model.Occupation, error) {
+	var occupations []model.Occupation
+	err := o.db.WithContext(ctx).Where("resume_id = ?", resumeID).Find(&occupations).Error
+	switch err {
+	case nil:
+	case gorm.ErrRecordNotFound:
+		return nil, nil
+	default:
+		return nil, err
+	}
+
+	return &occupations, nil
 }
