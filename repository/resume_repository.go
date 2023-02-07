@@ -54,3 +54,28 @@ func (r *resumeRepository) FindByID(ctx context.Context, resumeID int64) (*model
 
 	return &resume, nil
 }
+
+func (r *resumeRepository) FindAllIDsByFilter(ctx context.Context, filter model.GetResumeFilter) ([]int64, error) {
+	var ids []int64
+	err := r.db.WithContext(ctx).
+		Model(&model.Resume{}).
+		Limit(int(filter.Size)).
+		Offset(getOffsetFromPageAndSize(filter.Page, filter.Size)).
+		Pluck("id", &ids).Error
+	switch err {
+	case nil:
+	case gorm.ErrRecordNotFound:
+		return nil, nil
+	default:
+		return nil, err
+	}
+
+	return ids, nil
+}
+
+func getOffsetFromPageAndSize(page, size int64) int {
+	if page == 0 {
+		return 1
+	}
+	return int(size * (page - 1))
+}

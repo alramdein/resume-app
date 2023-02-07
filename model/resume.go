@@ -12,6 +12,7 @@ type ResumeUsecase interface {
 	Update(ctx context.Context, resumeID int64, input CreateResumeInput) error
 	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
 	Delete(ctx context.Context, resumeID int64) error
+	FindAllByFilter(ctx context.Context, filter GetResumeFilter) ([]*Resume, error)
 }
 
 type ResumeRepository interface {
@@ -19,6 +20,7 @@ type ResumeRepository interface {
 	UpdateWithTransaction(ctx context.Context, tx *gorm.DB, resume Resume) error
 	DeleteWithTransaction(ctx context.Context, tx *gorm.DB, resumeID int64) error
 	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
+	FindAllIDsByFilter(ctx context.Context, filter GetResumeFilter) ([]int64, error)
 }
 
 type Resume struct {
@@ -42,4 +44,9 @@ type CreateResumeInput struct {
 	Achievements *[]string      `json:"achievements"`
 	Occupations  *[]interface{} `json:"occupations"`
 	Educations   *[]interface{} `json:"educations"`
+}
+
+type GetResumeFilter struct {
+	Page int64
+	Size int64
 }

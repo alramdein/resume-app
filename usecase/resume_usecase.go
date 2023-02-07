@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
 	"github.com/alramdein/karirlab-test/model"
@@ -161,6 +162,59 @@ func (r *resumeUsecase) FindByID(ctx context.Context, resumeID int64) (*model.Re
 	resume.Educations = *educations
 
 	return resume, nil
+}
+
+func (r *resumeUsecase) FindAllByFilter(ctx context.Context, filter model.GetResumeFilter) ([]*model.Resume, error) {
+	resumeIDs, err := r.resumeRepo.FindAllIDsByFilter(ctx, filter)
+	if err != nil {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+
+	c := make(chan *model.Resume, len(resumeIDs))
+	eg := &errgroup.Group{}
+	for _, id := range resumeIDs {
+		// bind id to goroutine scope
+		id := id
+		eg.Go(func() error {
+			r, err := r.FindByID(ctx, id)
+			if err != nil {
+				return err
+			}
+
+			c <- r
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+
+	close(c)
+
+	if len(c) <= 0 {
+		return nil, nil
+	}
+
+	// put all resumes in a map with resume id as key
+	rs := map[int64]*model.Resume{}
+	for resume := range c {
+		if resume != nil {
+			rs[resume.ID] = resume
+		}
+	}
+
+	// sort resumes based on the order of received ids
+	var resumes []*model.Resume
+	for _, id := range resumeIDs {
+		if resume, ok := rs[id]; ok {
+			resumes = append(resumes, resume)
+		}
+	}
+
+	return resumes, nil
 }
 
 func (r *resumeUsecase) insertOccupations(ctx context.Context, tx *gorm.DB, resumeID int64, occupations *[]interface{}) error {

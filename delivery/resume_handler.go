@@ -22,6 +22,7 @@ func NewResumeHandler(e *echo.Echo, ru model.ResumeUsecase) {
 	e.PUT("/resumes/:id", handler.Update)
 	e.DELETE("/resumes/:id", handler.Delete)
 	e.GET("/resumes/:id", handler.FindByID)
+	e.GET("/resumes", handler.FindAllByFilter)
 }
 
 func (r *resumeHandler) Create(c echo.Context) error {
@@ -153,5 +154,47 @@ func (r *resumeHandler) FindByID(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &Response{
 		Data: resume,
+	})
+}
+
+func (r *resumeHandler) FindAllByFilter(c echo.Context) error {
+	pageParam := c.QueryParam("page")
+	sizeParam := c.QueryParam("size")
+
+	if pageParam == "" || sizeParam == "" {
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: "page and size query required",
+		})
+	}
+
+	page, err := strconv.ParseInt(pageParam, 10, 64)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: "invalid page",
+		})
+	}
+
+	size, err := strconv.ParseInt(sizeParam, 10, 64)
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: "invalid size",
+		})
+	}
+
+	resumes, err := r.resumeUsecase.FindAllByFilter(c.Request().Context(), model.GetResumeFilter{
+		Page: page,
+		Size: size,
+	})
+	if err != nil {
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, &Response{
+			Message: "something went wrong",
+		})
+	}
+
+	return c.JSON(http.StatusOK, &Response{
+		Data: resumes,
 	})
 }
