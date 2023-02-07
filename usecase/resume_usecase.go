@@ -3,10 +3,9 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"reflect"
 
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/alramdein/karirlab-test/model"
 	"github.com/alramdein/karirlab-test/utils"
@@ -51,59 +50,77 @@ func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInpu
 		return err
 	}
 
-	if input.Occupations != nil {
-		for _, o := range *input.Occupations {
-			fmt.Println(reflect.TypeOf(o))
-			occ := convertToModel(o)
-			fmt.Println(occ)
-			err = r.occupationRepo.CreateWithTransaction(ctx, tx, model.Occupation{
-				ID:           utils.GenerateUID(),
-				ResumeID:     resume.ID,
-				Name:         null.StringFrom(*occ.Name),
-				Position:     null.StringFrom(*occ.Position),
-				StartDate:    null.TimeFrom(*occ.StartDate),
-				EndDate:      null.TimeFrom(*occ.StartDate),
-				Status:       null.StringFrom(*occ.Status),
-				Achievements: *occ.Achievements,
-			})
-			if err != nil {
-				logrus.Error(err.Error())
-				r.gormTransactionRepo.Rollback(tx)
-				return err
-			}
-		}
+	err = r.insertOccupations(ctx, tx, resume.ID, input.Occupations)
+	if err != nil {
+		logrus.Error(err.Error())
+		r.gormTransactionRepo.Rollback(tx)
+		return err
 	}
 
-	// if input.Educations != nil {
-	// 	for _, e := range *input.Educations {
-	// 		edu := e.(model.CreateEducationInput)
-	// 		err = r.educationRepo.CreateWithTransaction(ctx, tx, model.Education{
-	// 			ID:        utils.GenerateUID(),
-	// 			ResumeID:  resume.ID,
-	// 			Name:      edu.Name,
-	// 			Faculty:   edu.Faculty,
-	// 			Degree:    edu.Degree,
-	// 			City:      edu.City,
-	// 			StartDate: edu.StartDate,
-	// 			EndDate:   edu.EndDate,
-	// 			Score:     edu.Score,
-	// 		})
-	// 		if err != nil {
-	// 			logrus.Error(err.Error())
-	// 			r.gormTransactionRepo.Rollback(tx)
-	// 			return err
-	// 		}
-	// 	}
-	// }
+	err = r.insertEducations(ctx, tx, resume.ID, input.Educations)
+	if err != nil {
+		logrus.Error(err.Error())
+		r.gormTransactionRepo.Rollback(tx)
+		return err
+	}
 
 	r.gormTransactionRepo.Commit(tx)
 
 	return nil
 }
 
-func convertToModel(o interface{}) model.CreateOccupationInput {
-	jsonData, _ := json.Marshal(o.(map[string]interface{}))
-	var a model.CreateOccupationInput
-	json.Unmarshal(jsonData, &a)
-	return a
+func (r *resumeUsecase) insertOccupations(ctx context.Context, tx *gorm.DB, resumeID int64, occupations *[]interface{}) error {
+	if occupations == nil {
+		return nil
+	}
+
+	for _, o := range *occupations {
+		var occ model.CreateOccupationInput
+		r.convertToModel(o, &occ)
+		err := r.occupationRepo.CreateWithTransaction(ctx, tx, model.Occupation{
+			ID:           utils.GenerateUID(),
+			ResumeID:     resumeID,
+			Name:         null.StringFrom(*occ.Name),
+			Position:     null.StringFrom(*occ.Position),
+			StartDate:    null.TimeFrom(*occ.StartDate),
+			EndDate:      null.TimeFrom(*occ.StartDate),
+			Status:       null.StringFrom(*occ.Status),
+			Achievements: *occ.Achievements,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *resumeUsecase) insertEducations(ctx context.Context, tx *gorm.DB, resumeID int64, educations *[]interface{}) error {
+	if educations == nil {
+		return nil
+	}
+
+	for _, o := range *educations {
+		var edu model.CreateEducationInput
+		r.convertToModel(o, &edu)
+		err := r.educationRepo.CreateWithTransaction(ctx, tx, model.Education{
+			ID:        utils.GenerateUID(),
+			ResumeID:  resumeID,
+			Name:      null.StringFrom(*edu.Name),
+			Degree:    null.StringFrom(*edu.Degree),
+			Faculty:   null.StringFrom(*edu.Faculty),
+			City:      null.StringFrom(*edu.City),
+			StartDate: null.TimeFrom(*edu.StartDate),
+			EndDate:   null.TimeFrom(*edu.StartDate),
+			Score:     null.FloatFrom(*edu.Score),
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *resumeUsecase) convertToModel(i interface{}, obj interface{}) {
+	jsonData, _ := json.Marshal(i.(map[string]interface{}))
+	json.Unmarshal(jsonData, obj)
 }
