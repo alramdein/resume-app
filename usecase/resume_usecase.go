@@ -32,7 +32,7 @@ func NewResumeUsecase(resumeRepo model.ResumeRepository,
 	}
 }
 
-func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInput) error {
+func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInput) (*model.Resume, error) {
 	resume := model.Resume{
 		ID:           utils.GenerateUID(),
 		Name:         input.Name,
@@ -48,29 +48,29 @@ func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInpu
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
-		return err
+		return nil, err
 	}
 
 	err = r.insertOccupations(ctx, tx, resume.ID, input.Occupations)
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
-		return err
+		return nil, err
 	}
 
 	err = r.insertEducations(ctx, tx, resume.ID, input.Educations)
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
-		return err
+		return nil, err
 	}
 
 	r.gormTransactionRepo.Commit(tx)
 
-	return nil
+	return r.FindByID(ctx, resume.ID)
 }
 
-func (r *resumeUsecase) Update(ctx context.Context, resumeID int64, input model.CreateResumeInput) error {
+func (r *resumeUsecase) Update(ctx context.Context, resumeID int64, input model.CreateResumeInput) (*model.Resume, error) {
 	resume := model.Resume{
 		ID:           resumeID,
 		Name:         input.Name,
@@ -86,40 +86,40 @@ func (r *resumeUsecase) Update(ctx context.Context, resumeID int64, input model.
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
-		return err
+		return nil, err
 	}
 
 	err = r.occupationRepo.DeleteByResumeIDWithTransaction(ctx, tx, resumeID)
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
-		return err
+		return nil, err
 	}
 
 	err = r.insertOccupations(ctx, tx, resume.ID, input.Occupations)
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
-		return err
+		return nil, err
 	}
 
 	err = r.educationRepo.DeleteByResumeIDWithTransaction(ctx, tx, resumeID)
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
-		return err
+		return nil, err
 	}
 
 	err = r.insertEducations(ctx, tx, resume.ID, input.Educations)
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
-		return err
+		return nil, err
 	}
 
 	r.gormTransactionRepo.Commit(tx)
 
-	return nil
+	return r.FindByID(ctx, resume.ID)
 }
 
 func (r *resumeUsecase) Delete(ctx context.Context, resumeID int64) error {

@@ -35,7 +35,7 @@ func (r *resumeHandler) Create(c echo.Context) error {
 		})
 	}
 
-	err = r.resumeUsecase.Create(c.Request().Context(), *request)
+	resume, err := r.resumeUsecase.Create(c.Request().Context(), *request)
 	if err != nil {
 		logrus.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, &Response{
@@ -45,6 +45,7 @@ func (r *resumeHandler) Create(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &Response{
 		Message: "successfully add a resume",
+		Data:    resume,
 	})
 }
 
@@ -80,7 +81,7 @@ func (r *resumeHandler) Update(c echo.Context) error {
 		})
 	}
 
-	err = r.resumeUsecase.Update(c.Request().Context(), resumeID, *request)
+	updatedResume, err := r.resumeUsecase.Update(c.Request().Context(), resumeID, *request)
 	if err != nil {
 		logrus.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, &Response{
@@ -90,6 +91,7 @@ func (r *resumeHandler) Update(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, &Response{
 		Message: "successfully update a resume",
+		Data:    updatedResume,
 	})
 }
 

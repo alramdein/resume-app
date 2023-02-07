@@ -8,10 +8,10 @@ import (
 )
 
 type ResumeUsecase interface {
-	Create(ctx context.Context, input CreateResumeInput) error
-	Update(ctx context.Context, resumeID int64, input CreateResumeInput) error
-	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
+	Create(ctx context.Context, input CreateResumeInput) (*Resume, error)
+	Update(ctx context.Context, resumeID int64, input CreateResumeInput) (*Resume, error)
 	Delete(ctx context.Context, resumeID int64) error
+	FindByID(ctx context.Context, resumeID int64) (*Resume, error)
 	FindAllByFilter(ctx context.Context, filter GetResumeFilter) ([]*Resume, error)
 }
 
