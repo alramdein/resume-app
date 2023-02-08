@@ -36,11 +36,11 @@ type Resume struct {
 }
 
 type CreateResumeInput struct {
-	Name         string         `json:"name"`
-	Email        string         `json:"email"`
-	PhoneNumber  string         `json:"phone_number"`
+	Name         string         `json:"name" validate:"required"`
+	Email        string         `json:"email" validate:"required,email"`
+	PhoneNumber  string         `json:"phone_number" validate:"required,e164"`
 	LinkedinURL  *string        `json:"linkedin_url"`
-	PortfolioURL *string        `json:"portfolio_url"`
+	PortfolioURL *string        `json:"portfolio_url" validate:"url"`
 	Achievements *[]string      `json:"achievements"`
 	Occupations  *[]interface{} `json:"occupations"`
 	Educations   *[]interface{} `json:"educations"`

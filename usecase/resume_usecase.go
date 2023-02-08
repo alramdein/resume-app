@@ -3,15 +3,20 @@ package usecase
 import (
 	"context"
 	"encoding/json"
+	"regexp"
+	"strings"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/guregu/null"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"gorm.io/gorm"
 
 	"github.com/alramdein/karirlab-test/model"
 	"github.com/alramdein/karirlab-test/utils"
-	"github.com/guregu/null"
 )
+
+var validate = validator.New()
 
 type resumeUsecase struct {
 	resumeRepo          model.ResumeRepository
@@ -33,6 +38,12 @@ func NewResumeUsecase(resumeRepo model.ResumeRepository,
 }
 
 func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInput) (*model.Resume, error) {
+	err := r.validateInput(input)
+	if err != nil {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+
 	resume := model.Resume{
 		ID:           utils.GenerateUID(),
 		Name:         input.Name,
@@ -44,7 +55,7 @@ func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInpu
 	resume.Achievements.Scan(input.Achievements)
 
 	tx := r.gormTransactionRepo.BeginTransaction()
-	err := r.resumeRepo.CreateWithTransaction(ctx, tx, resume)
+	err = r.resumeRepo.CreateWithTransaction(ctx, tx, resume)
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
@@ -71,6 +82,12 @@ func (r *resumeUsecase) Create(ctx context.Context, input model.CreateResumeInpu
 }
 
 func (r *resumeUsecase) Update(ctx context.Context, resumeID int64, input model.CreateResumeInput) (*model.Resume, error) {
+	err := r.validateInput(input)
+	if err != nil {
+		logrus.Error(err.Error())
+		return nil, err
+	}
+
 	resume := model.Resume{
 		ID:           resumeID,
 		Name:         input.Name,
@@ -82,7 +99,7 @@ func (r *resumeUsecase) Update(ctx context.Context, resumeID int64, input model.
 	resume.Achievements.Scan(input.Achievements)
 
 	tx := r.gormTransactionRepo.BeginTransaction()
-	err := r.resumeRepo.UpdateWithTransaction(ctx, tx, resume)
+	err = r.resumeRepo.UpdateWithTransaction(ctx, tx, resume)
 	if err != nil {
 		logrus.Error(err.Error())
 		r.gormTransactionRepo.Rollback(tx)
@@ -271,4 +288,69 @@ func (r *resumeUsecase) insertEducations(ctx context.Context, tx *gorm.DB, resum
 func (r *resumeUsecase) convertToModel(i interface{}, obj interface{}) {
 	jsonData, _ := json.Marshal(i.(map[string]interface{}))
 	json.Unmarshal(jsonData, obj)
+}
+
+func (r *resumeUsecase) validateInput(input model.CreateResumeInput) error {
+	err := validate.Struct(input)
+	switch {
+	case err == nil:
+	case strings.Contains(err.Error(), "e164"):
+		e := r.validatePhoneNumber(input.PhoneNumber)
+		if e != nil {
+			return e
+		}
+	case strings.Contains(err.Error(), "PortfolioURL"):
+		return ErrInvalidPortfolioURL
+	}
+
+	err = r.validateEmail(input.Email)
+	if err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	err = r.validateLinkedinURL(*input.LinkedinURL)
+	if err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (r *resumeUsecase) validatePhoneNumber(phone string) error {
+	match, err := regexp.MatchString("^0\\d{7,11}$", phone)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	if !match {
+		return ErrInvalidPhoneNumber
+	}
+	return nil
+}
+
+func (r *resumeUsecase) validateLinkedinURL(linkedinURL string) error {
+	match, err := regexp.MatchString("^(http(s)?:\\/\\/)?([\\w]+\\.)?linkedin\\.com\\/(pub|in|profile)", linkedinURL)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	if !match {
+		return ErrInvalidLinkedInURL
+	}
+	return nil
+}
+
+func (r *resumeUsecase) validateEmail(email string) error {
+	match, err := regexp.MatchString("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$", email)
+	logrus.Info(match)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	if !match {
+		return ErrInvalidEmail
+	}
+	return nil
 }

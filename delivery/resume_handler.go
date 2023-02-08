@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/alramdein/karirlab-test/model"
+	"github.com/alramdein/karirlab-test/usecase"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 )
@@ -36,14 +37,7 @@ func (r *resumeHandler) Create(c echo.Context) error {
 	}
 
 	resume, err := r.resumeUsecase.Create(c.Request().Context(), *request)
-	if err != nil {
-		logrus.Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, &Response{
-			Message: "something went wrong",
-		})
-	}
-
-	return c.JSON(http.StatusOK, &Response{
+	return r.returnHTTPResponse(c, err, Response{
 		Message: "successfully add a resume",
 		Data:    resume,
 	})
@@ -82,14 +76,7 @@ func (r *resumeHandler) Update(c echo.Context) error {
 	}
 
 	updatedResume, err := r.resumeUsecase.Update(c.Request().Context(), resumeID, *request)
-	if err != nil {
-		logrus.Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, &Response{
-			Message: "something went wrong",
-		})
-	}
-
-	return c.JSON(http.StatusOK, &Response{
+	return r.returnHTTPResponse(c, err, Response{
 		Message: "successfully update a resume",
 		Data:    updatedResume,
 	})
@@ -199,4 +186,32 @@ func (r *resumeHandler) FindAllByFilter(c echo.Context) error {
 	return c.JSON(http.StatusOK, &Response{
 		Data: resumes,
 	})
+}
+
+func (r *resumeHandler) returnHTTPResponse(c echo.Context, err error, successRes Response) error {
+	switch err {
+	case nil:
+		return c.JSON(http.StatusOK, &successRes)
+	case usecase.ErrInvalidEmail:
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: usecase.ErrInvalidEmail.Error(),
+		})
+	case usecase.ErrInvalidPhoneNumber:
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: usecase.ErrInvalidPhoneNumber.Error(),
+		})
+	case usecase.ErrInvalidLinkedInURL:
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: usecase.ErrInvalidLinkedInURL.Error(),
+		})
+	case usecase.ErrInvalidPortfolioURL:
+		return c.JSON(http.StatusBadRequest, &Response{
+			Message: usecase.ErrInvalidPortfolioURL.Error(),
+		})
+	default:
+		logrus.Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, &Response{
+			Message: "something went wrong",
+		})
+	}
 }
